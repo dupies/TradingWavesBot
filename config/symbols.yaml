@@ -1,0 +1,35 @@
+# pip_value_per_lot is quoted in account currency per pip per 1.00 lot.
+# For USD-quoted pairs on a USD account this is a constant 10.00; for pairs
+# where USD is the base it varies with price, so treat these as approximations
+# until confirmed against your broker's contract specification.
+EURUSD:
+  pip_size: 0.0001
+  digits: 5
+  min_lot: 0.01
+  max_lot: 100.0
+  lot_step: 0.01
+  pip_value_per_lot: 10.0
+
+GBPUSD:
+  pip_size: 0.0001
+  digits: 5
+  min_lot: 0.01
+  max_lot: 100.0
+  lot_step: 0.01
+  pip_value_per_lot: 10.0
+
+AUDUSD:
+  pip_size: 0.0001
+  digits: 5
+  min_lot: 0.01
+  max_lot: 100.0
+  lot_step: 0.01
+  pip_value_per_lot: 10.0
+
+USDJPY:
+  pip_size: 0.01
+  digits: 3
+  min_lot: 0.01
+  max_lot: 100.0
+  lot_step: 0.01
+  pip_value_per_lot: 6.7

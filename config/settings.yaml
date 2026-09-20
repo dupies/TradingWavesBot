@@ -1,0 +1,27 @@
+# Which execution venue to use: sim (backtest), paper (live prices, no orders)
+# or mt5 (real orders). Paper and mt5 arrive in Phase 3.
+broker: sim
+
+# Identifies this bot's trades at the broker. Positions with a different magic
+# number are left alone, so manual trades in the same account are safe.
+magic: 770001
+
+strategy: range_1h
+symbols: [EURUSD, GBPUSD]
+
+risk:
+  risk_per_trade_pct: 1.0      # percent of equity risked per trade
+  daily_loss_cap_pct: 3.0      # stop opening new trades after this daily loss
+  max_concurrent_positions: 3
+  max_total_exposure_pct: 10.0 # total money at stake across open positions
+
+strategy_config:
+  session_hour: 8              # hour whose candle defines the range
+  session_timezone: Europe/London
+  confirmation_window: 3       # candles to wait for a breakout before giving up
+  tp_pips: [100.0, 200.0, 300.0, 400.0]
+  sl_buffer_pips: 2.0
+  min_range_pips: 5.0
+  max_range_pips: 60.0
+  max_spread_pips: 3.0
+  breakeven_after_tp1: true
