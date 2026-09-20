@@ -10,7 +10,15 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from tradingwaves.core.models import Candle, Direction, Position, SymbolSpec, TakeProfit, Timeframe
+from tradingwaves.core.models import (
+    Candle,
+    Direction,
+    Fill,
+    Position,
+    SymbolSpec,
+    TakeProfit,
+    Timeframe,
+)
 
 
 @runtime_checkable
@@ -38,3 +46,12 @@ class BrokerPort(Protocol):
     def modify_stop(self, ticket: int, price: float) -> None: ...
 
     def open_positions(self) -> list[Position]: ...
+
+    def drain_fills(self) -> list[Fill]:
+        """Fills that happened since the last call.
+
+        Take-profit and stop-loss fills occur inside the venue, not through a
+        call the engine makes, so the engine has to collect them to journal
+        them and to keep the daily loss tally honest.
+        """
+        ...

@@ -10,9 +10,10 @@ from __future__ import annotations
 import json
 import sqlite3
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
-from tradingwaves.core.models import Fill, Position, Signal
+from tradingwaves.core.models import Fill, Position, RejectCode, Signal
 from tradingwaves.core.risk import RiskDecision
 
 _SCHEMA = """
@@ -168,3 +169,27 @@ class Journal:
 
     def close(self) -> None:
         self._conn.close()
+
+    def record_veto(
+        self, symbol: str, source: str, at: datetime, code: RejectCode, reason: str
+    ) -> int:
+        """Record a setup a strategy rejected before it became a tradeable signal.
+
+        Stored as a signal with direction NONE so it joins cleanly into
+        `rejections()` without pretending a direction was ever chosen.
+        """
+        cursor = self._conn.execute(
+            """
+            INSERT INTO signals
+                (symbol, direction, entry_price, stop_loss, take_profits, source, created_at, meta)
+            VALUES (?, 'NONE', NULL, 0, '[]', ?, ?, '{}')
+            """,
+            (symbol, source, at.isoformat()),
+        )
+        signal_id = int(cursor.lastrowid)
+        self._conn.execute(
+            "INSERT INTO decisions (signal_id, approved, lot, reason, code) VALUES (?, 0, 0, ?, ?)",
+            (signal_id, reason, str(code)),
+        )
+        self._conn.commit()
+        return signal_id

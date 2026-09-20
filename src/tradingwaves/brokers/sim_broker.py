@@ -38,6 +38,7 @@ class SimBroker:
         self.spread_pips = spread_pips
         self.realized_pnl = 0.0
         self.fills: list[Fill] = []
+        self._drained = 0
 
     # ---- replay control -------------------------------------------------
 
@@ -117,6 +118,11 @@ class SimBroker:
 
     def open_positions(self) -> list[Position]:
         return list(self._positions)
+
+    def drain_fills(self) -> list[Fill]:
+        drained = self.fills[self._drained :]
+        self._drained = len(self.fills)
+        return drained
 
     # ---- internals ------------------------------------------------------
 
