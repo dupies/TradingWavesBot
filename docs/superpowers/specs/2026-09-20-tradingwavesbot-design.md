@@ -49,8 +49,9 @@ config/
 src/
   core/                pure Python, no broker imports
     models.py          Candle, Timeframe, Signal, Position, Fill,
-                       RiskDecision, PositionAction, StrategyContext
-    risk.py            position sizing, daily loss cap, exposure limits
+                       TakeProfit, SymbolSpec, PositionAction
+    ladder.py          take-profit ladder sizing and feasibility
+    risk.py            RiskEngine, RiskLimits, RiskDecision, AccountState
     engine.py          orchestration: poll -> strategy -> risk -> execute
     journal.py         SQLite record of every decision, veto and fill
   brokers/
