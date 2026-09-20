@@ -51,3 +51,11 @@ logs/
 # MetaTrader
 *.fxt
 *.hst
+
+# Environments
+.venv/
+
+# Local data and runtime artifacts
+data/
+*.sqlite
+*.db
