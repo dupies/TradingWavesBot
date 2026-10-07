@@ -1,0 +1,981 @@
+<meta charset="utf-8">
+<title>TradingWavesBot</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root {
+    --ground: #edf0f3;
+    --surface: #ffffff;
+    --surface-sunk: #e4e9ee;
+    --ink: #111821;
+    --ink-soft: #46535f;
+    --ink-faint: #6e7d89;
+    --rule: #cfd8e0;
+    --rule-soft: #dfe5eb;
+    --accent: #17506e;
+    --accent-soft: #e0ebf3;
+    --warn: #8f5505;
+    --warn-soft: #f6ecda;
+    --good: #2c6350;
+    --good-soft: #e2eeea;
+    --bad: #93301f;
+    --bad-soft: #f5e5e2;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --measure: 68ch;
+    --wide: 940px;
+  }
+  :root:not([data-theme="light"]) {
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101418;
+      --surface: #171d23;
+      --surface-sunk: #1d242b;
+      --ink: #e2e8ed;
+      --ink-soft: #a7b3bd;
+      --ink-faint: #7f8c97;
+      --rule: #2c353d;
+      --rule-soft: #232b32;
+      --accent: #6fb2dc;
+      --accent-soft: #15283a;
+      --warn: #d79b43;
+      --warn-soft: #2e2415;
+      --good: #74bfa0;
+      --good-soft: #15291f;
+      --bad: #dd8171;
+      --bad-soft: #2d1a16;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #101418;
+    --surface: #171d23;
+    --surface-sunk: #1d242b;
+    --ink: #e2e8ed;
+    --ink-soft: #a7b3bd;
+    --ink-faint: #7f8c97;
+    --rule: #2c353d;
+    --rule-soft: #232b32;
+    --accent: #6fb2dc;
+    --accent-soft: #15283a;
+    --warn: #d79b43;
+    --warn-soft: #2e2415;
+    --good: #74bfa0;
+    --good-soft: #15291f;
+    --bad: #dd8171;
+    --bad-soft: #2d1a16;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- shell ---------- */
+
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-inline: 20px;
+  }
+  @media (min-width: 1100px) {
+    .shell {
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 56px;
+      padding-inline: 40px;
+    }
+  }
+
+  .rail { display: none; }
+  @media (min-width: 1100px) {
+    .rail {
+      display: block;
+      position: sticky;
+      top: calc(env(safe-area-inset-top, 0px) + 40px);
+      align-self: start;
+      padding-block: 64px 0;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+  }
+  .rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .rail a {
+    display: flex;
+    gap: 9px;
+    padding: 5px 0;
+    color: var(--ink-faint);
+    text-decoration: none;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .rail li:first-child a { border-top: 0; }
+  .rail a:hover { color: var(--accent); }
+  .rail .n { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  .doc { min-width: 0; padding-block: 0 96px; }
+  .doc > * { max-width: var(--measure); }
+  .doc > .wide, .doc > figure, .doc > .tablewrap { max-width: var(--wide); }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    max-width: var(--wide);
+    padding-block: 56px 40px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0 0 18px;
+  }
+  .standfirst {
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 58ch;
+    margin: 0 0 30px;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px 28px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .facts div { display: flex; flex-direction: column; gap: 3px; }
+  .facts dt, .facts .k {
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 10.5px;
+  }
+  .facts .v { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  /* ---------- sections ---------- */
+
+  section { padding-block: 10px 6px; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.55rem, 3.2vw, 2rem);
+    line-height: 1.18;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+    margin: 56px 0 8px;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  h2 .n {
+    font-family: var(--mono);
+    font-size: 0.62em;
+    font-weight: 500;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    margin: 36px 0 6px;
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 26px;
+    padding-left: calc(0.62em + 14px);
+  }
+  p { margin: 0 0 1.05em; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface-sunk);
+    padding: 0.1em 0.34em;
+    border-radius: 2px;
+  }
+  strong { font-weight: 600; }
+
+  ul.plain, ol.steps { margin: 0 0 1.2em; padding-left: 1.25em; }
+  ul.plain li, ol.steps li { margin-bottom: 0.5em; }
+
+  /* ---------- callout ---------- */
+
+  .note {
+    max-width: var(--measure);
+    border-left: 3px solid var(--warn);
+    background: var(--warn-soft);
+    padding: 16px 20px;
+    margin: 0 0 1.4em;
+  }
+  .note.flat { border-left-color: var(--accent); background: var(--accent-soft); }
+  .note .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .note.flat .label { color: var(--accent); }
+  .note p:last-child { margin-bottom: 0; }
+  .note p { font-size: 0.95rem; }
+
+  /* ---------- tables ---------- */
+
+  .tablewrap { overflow-x: auto; margin: 0 0 1.6em; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    min-width: 440px;
+  }
+  caption {
+    caption-side: bottom;
+    text-align: left;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    padding-top: 10px;
+    line-height: 1.45;
+  }
+  th {
+    text-align: left;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0 14px 8px 0;
+    border-bottom: 1px solid var(--ink);
+    vertical-align: bottom;
+  }
+  td {
+    padding: 10px 14px 10px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: 1px solid var(--rule); }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td.mono, .c { font-family: var(--mono); font-size: 0.82rem; }
+  td.mono { white-space: nowrap; }
+  .pos { color: var(--good); }
+  .neg { color: var(--bad); }
+
+  .chip {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .chip.built { background: var(--good-soft); color: var(--good); }
+  .chip.later { background: var(--surface-sunk); color: var(--ink-faint); }
+  .chip.gap { background: var(--warn-soft); color: var(--warn); }
+
+  /* ---------- figures ---------- */
+
+  figure { margin: 2em 0 2.2em; }
+  .figbox {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 22px 20px;
+    overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; max-width: 100%; height: auto; min-width: 460px; }
+  figcaption {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--ink-faint);
+    padding-top: 11px;
+    max-width: 62ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  .d-ink { stroke: currentColor; fill: none; }
+  .d-rule { stroke: var(--rule); fill: none; }
+  .d-accent { stroke: var(--accent); fill: none; }
+  .d-good { stroke: var(--good); fill: none; }
+  .d-bad { stroke: var(--bad); fill: none; }
+  .d-warn { stroke: var(--warn); fill: none; }
+  .f-surface { fill: var(--surface); }
+  .f-sunk { fill: var(--surface-sunk); }
+  .f-accent { fill: var(--accent); }
+  .f-good { fill: var(--good); }
+  .f-bad { fill: var(--bad); }
+  .f-warn { fill: var(--warn); }
+  .f-ink { fill: currentColor; }
+  text {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    fill: currentColor;
+  }
+  text.lbl { font-size: 10.5px; fill: var(--ink-faint); letter-spacing: 0.04em; }
+  text.hd { font-family: var(--sans); font-size: 12px; font-weight: 600; fill: currentColor; }
+  text.acc { fill: var(--accent); }
+  text.bad { fill: var(--bad); }
+  text.good { fill: var(--good); }
+  text.warn { fill: var(--warn); }
+
+  /* ---------- terminal block ---------- */
+
+  pre.term {
+    max-width: var(--wide);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    margin: 0 0 1.6em;
+    color: var(--ink);
+  }
+  pre.term .cmt { color: var(--ink-faint); }
+  pre.term .out { color: var(--ink-soft); }
+
+  /* ---------- gate ladder ---------- */
+
+  .gates { max-width: var(--wide); margin: 1.6em 0 2em; display: flex; flex-direction: column; gap: 0; }
+  .gate {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 18px;
+    padding: 18px 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .gate:first-child { border-top: 1px solid var(--ink); }
+  .gate:last-child { border-bottom: 1px solid var(--ink); }
+  .gate .no {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .gate h4 { font-family: var(--sans); font-size: 0.98rem; font-weight: 600; margin: 0 0 4px; }
+  .gate p { font-size: 0.9rem; color: var(--ink-soft); margin: 0 0 6px; max-width: 60ch; }
+  .gate .pass {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--good);
+    letter-spacing: 0.03em;
+  }
+  .gate .pass::before { content: "PASS IF  "; color: var(--ink-faint); }
+
+  footer {
+    max-width: var(--wide);
+    margin-top: 72px;
+    padding-top: 22px;
+    border-top: 2px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="shell">
+<nav class="rail" aria-label="Sections">
+  <ol>
+    <li><a href="#trade"><span class="n">01</span><span>The trade</span></a></li>
+    <li><a href="#guards"><span class="n">02</span><span>The guards</span></a></li>
+    <li><a href="#arch"><span class="n">03</span><span>Architecture</span></a></li>
+    <li><a href="#journal"><span class="n">04</span><span>The journal</span></a></li>
+    <li><a href="#train"><span class="n">05</span><span>"Training"</span></a></li>
+    <li><a href="#test"><span class="n">06</span><span>Testing</span></a></li>
+    <li><a href="#live"><span class="n">07</span><span>Going live</span></a></li>
+    <li><a href="#day"><span class="n">08</span><span>A trading day</span></a></li>
+    <li><a href="#gaps"><span class="n">09</span><span>Not built yet</span></a></li>
+  </ol>
+</nav>
+
+<main class="doc">
+
+<header class="masthead">
+  <p class="eyebrow">Operator documentation · Phase 1 complete</p>
+  <h1>TradingWavesBot</h1>
+  <p class="standfirst">A MetaTrader 5 bot that trades the 1-hour opening-range breakout. This document explains what it does on each candle, how its risk limits work, how its parameters get chosen, and what has to be true before it touches real money.</p>
+  <div class="facts">
+    <div><span class="k">Strategy</span><span class="v">range_1h</span></div>
+    <div><span class="k">Instruments</span><span class="v">EURUSD, GBPUSD</span></div>
+    <div><span class="k">Risk / trade</span><span class="v">1.0% of equity</span></div>
+    <div><span class="k">Daily loss cap</span><span class="v">3.0% of balance</span></div>
+    <div><span class="k">Test suite</span><span class="v">84 passing</span></div>
+    <div><span class="k">Live orders</span><span class="v">None yet</span></div>
+  </div>
+</header>
+
+<section id="trade">
+  <h2><span class="n">01</span> The trade, candle by candle</h2>
+  <p class="kicker">What the bot is actually looking for</p>
+
+  <p>The bot watches one 1-hour candle a day and then waits. At <strong>08:00 London</strong> it records the high and the low of that hour — the opening range. Everything after that is a reaction to that range.</p>
+
+  <p>From 09:00 onward it checks each closed 1H candle. If a candle <em>closes</em> above the range high, it buys. If one closes below the range low, it sells. Closes inside the range don't count; after three such candles the setup is abandoned and the bot does nothing more with that symbol until tomorrow. One trade per symbol per day, maximum.</p>
+
+  <p>Note the word <em>closes</em>. A wick poking through the range does not trigger anything — the bot only ever acts on finished candles, and it only enters at the <strong>open of the candle after</strong> the one that triggered it. That one-candle lag is deliberate: a decision made on a closed candle cannot honestly be executed inside it, and a backtest that pretends otherwise is lying to you.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 740 470" role="img" aria-label="A long trade drawn to pip scale: a 20-pip opening range, entry on the breakout candle's next open, a stop 28 pips below, and four take-profit rungs at 100, 200, 300 and 400 pips.">
+        <!-- TP rungs -->
+        <line class="d-rule" x1="56" y1="40" x2="612" y2="40" stroke-dasharray="3 4"/>
+        <line class="d-rule" x1="56" y1="130" x2="612" y2="130" stroke-dasharray="3 4"/>
+        <line class="d-rule" x1="56" y1="220" x2="612" y2="220" stroke-dasharray="3 4"/>
+        <line class="d-rule" x1="56" y1="310" x2="612" y2="310" stroke-dasharray="3 4"/>
+        <text class="lbl good" x="620" y="36">TP4  +400p   25%</text>
+        <text class="lbl good" x="620" y="126">TP3  +300p   25%</text>
+        <text class="lbl good" x="620" y="216">TP2  +200p   25%</text>
+        <text class="lbl good" x="620" y="306">TP1  +100p   25%  → stop to breakeven</text>
+        <circle class="f-good" cx="612" cy="40" r="2.6"/>
+        <circle class="f-good" cx="612" cy="130" r="2.6"/>
+        <circle class="f-good" cx="612" cy="220" r="2.6"/>
+        <circle class="f-good" cx="612" cy="310" r="2.6"/>
+
+        <!-- entry line -->
+        <line class="d-accent" x1="56" y1="400" x2="612" y2="400" stroke-width="1.4"/>
+        <text class="lbl acc" x="620" y="396">ENTRY  next candle open</text>
+
+        <!-- stop line -->
+        <line class="d-bad" x1="56" y1="425" x2="612" y2="425" stroke-width="1.4" stroke-dasharray="6 3"/>
+        <text class="lbl bad" x="620" y="434">STOP  range low − 2p buffer</text>
+
+        <!-- range band -->
+        <rect class="f-sunk" x="56" y="405" width="556" height="18"/>
+        <line class="d-rule" x1="56" y1="405" x2="612" y2="405"/>
+        <line class="d-rule" x1="56" y1="423" x2="612" y2="423"/>
+        <text class="lbl" x="62" y="448">08:00 opening range · 20 pips</text>
+
+        <!-- candle 1: the range candle -->
+        <line class="d-ink" x1="100" y1="401" x2="100" y2="427" stroke-width="1"/>
+        <rect class="f-sunk d-ink" x="92" y="406" width="16" height="16" stroke-width="1.2"/>
+        <text class="lbl" x="84" y="464">08:00</text>
+
+        <!-- candle 2: the breakout candle -->
+        <line class="d-ink" x1="168" y1="394" x2="168" y2="420" stroke-width="1"/>
+        <rect class="f-accent" x="160" y="399" width="16" height="18"/>
+        <text class="lbl" x="152" y="464">09:00</text>
+        <text class="lbl acc" x="186" y="392">closes above the high</text>
+
+        <!-- candle 3: entry candle -->
+        <line class="d-ink" x1="236" y1="392" x2="236" y2="408" stroke-width="1"/>
+        <rect class="f-surface d-accent" x="228" y="396" width="16" height="10" stroke-width="1.2"/>
+        <text class="lbl" x="220" y="464">10:00</text>
+        <path class="d-accent" d="M236 384 L236 393" stroke-width="1.4" marker-end="url(#ar)"/>
+        <text class="lbl acc" x="254" y="378">bought here</text>
+
+        <!-- scale bracket -->
+        <line class="d-rule" x1="40" y1="40" x2="40" y2="425"/>
+        <line class="d-rule" x1="36" y1="400" x2="44" y2="400"/>
+        <line class="d-rule" x1="36" y1="425" x2="44" y2="425"/>
+        <line class="d-rule" x1="36" y1="40" x2="44" y2="40"/>
+        <text class="lbl" x="4" y="238" transform="rotate(-90 14 238)">pips from entry</text>
+
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <figcaption><b>Drawn to true pip scale.</b> This is the single most important picture in the document: the range the bot reads is 20 pips tall, and the furthest target is 400 pips away — twenty times the signal it was derived from. EURUSD's average <em>daily</em> range is roughly 70–90 pips, so TP1 is typically a 1–3 day hold and TP4 can take weeks. These four distances are configuration, not law, and section 05 is about replacing them with evidence.</figcaption>
+  </figure>
+
+  <h3>Where the stop and targets come from</h3>
+  <p>The stop goes on the far side of the range — the range low for a buy, the range high for a sell — pushed out by a 2-pip buffer so that spread alone doesn't take you out. In the picture above that's a 28-pip stop.</p>
+  <p>That stop distance is what sets your position size, not the other way around. The bot risks 1% of equity on the trade and solves for lots:</p>
+  <pre class="term">lots = (equity × 1%) ÷ (stop_pips × pip_value_per_lot)
+
+<span class="cmt">on $10,000 equity with a 28-pip stop on EURUSD:</span>
+<span class="out">        100 ÷ (28 × 10.00) = 0.357 → rounded down to 0.35 lots</span></pre>
+  <p>Rounding is always <em>down</em> to the broker's lot step. Rounding up would quietly risk more than the 1% you asked for, and a bot that silently exceeds its own risk setting is worse than no bot.</p>
+
+  <h3>The ladder, and why it sometimes gets shorter</h3>
+  <p>The position exits in four 25% slices, one at each target. When TP1 fills, the stop moves to your entry price — from that point the trade cannot lose money, barring a gap or slippage through the stop.</p>
+  <p>A four-rung ladder needs at least four minimum lots to execute, because your broker won't accept a 0.0025-lot partial close. So a 0.03-lot position physically cannot be closed in four pieces. Rather than entering a trade whose later exits would be rejected, the bot shortens the ladder to what the size can honour — <strong>keeping the nearest targets and dropping the furthest</strong>. A 0.03-lot position runs TP1, TP2 and TP3 at 0.01 each. If the size can't honour even one rung, the trade isn't taken.</p>
+</section>
+
+<section id="guards">
+  <h2><span class="n">02</span> The guards</h2>
+  <p class="kicker">Nine ways a setup gets refused — each one logged</p>
+
+  <p>Most of what this bot does is decline to trade. Every refusal is written to the journal with a machine-readable code and a sentence of explanation, so you can always answer the question "why didn't it take that?" after the fact.</p>
+
+  <p>There are two layers. The strategy vetoes setups that don't look like its setup. The risk engine vetoes trades the account can't afford — and it sits on the <em>single</em> path every order takes, which means a signal you send in by hand later (Phase 4) is subject to exactly the same caps.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Code</th><th>Layer</th><th>Refuses when</th><th>Default</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">RANGE_TOO_SMALL</td><td>Strategy</td><td>The opening hour was too quiet for the break to mean anything</td><td class="mono">&lt; 5 pips</td></tr>
+        <tr><td class="mono">RANGE_TOO_WIDE</td><td>Strategy</td><td>The range is so wide that a 1% stop yields an untradeable lot size</td><td class="mono">&gt; 60 pips</td></tr>
+        <tr><td class="mono">SPREAD_TOO_WIDE</td><td>Strategy</td><td>Spread is abnormal — news, rollover, a thin session</td><td class="mono">&gt; 3 pips</td></tr>
+        <tr><td class="mono">DAILY_LOSS_CAP</td><td>Risk</td><td>Today's realised losses have hit the cap. Open trades keep being managed; no new ones open</td><td class="mono">−3% balance</td></tr>
+        <tr><td class="mono">MAX_POSITIONS</td><td>Risk</td><td>Too many positions already open</td><td class="mono">3</td></tr>
+        <tr><td class="mono">MAX_EXPOSURE</td><td>Risk</td><td>Money at stake across all open stops would exceed the limit</td><td class="mono">10% equity</td></tr>
+        <tr><td class="mono">LOT_BELOW_MINIMUM</td><td>Risk</td><td>1% of equity over this stop distance sizes below the broker's minimum lot</td><td class="mono">0.01</td></tr>
+        <tr><td class="mono">INVALID_SIGNAL</td><td>Risk</td><td>No entry price, or a stop on the wrong side of entry</td><td>—</td></tr>
+        <tr><td class="mono">ALREADY_TRADED_TODAY</td><td>Strategy</td><td>One trade per symbol per day — enforced by the setup state machine</td><td>—</td></tr>
+      </tbody>
+      <tbody><tr><td colspan="4" style="border:0;padding-top:0"></td></tr></tbody>
+      <caption>Reject codes as implemented in <code>core/models.py</code>. The last row is enforced through the strategy's per-day state rather than emitted as a code — see section 09.</caption>
+    </table>
+  </div>
+
+  <div class="note flat">
+    <span class="label">How exposure is measured</span>
+    <p>Not notional value. The risk engine adds up <em>what you lose if every open stop is hit</em> and compares that to 10% of equity. On a leveraged account notional value is a meaningless number; money at stake is the one that can actually bankrupt you. A position whose stop has moved to breakeven contributes zero.</p>
+  </div>
+</section>
+
+<section id="arch">
+  <h2><span class="n">03</span> How it's put together</h2>
+  <p class="kicker">Why the backtest and the live bot are the same code</p>
+
+  <p>The bot is built as a plain Python core — price maths, strategy rules, risk limits, the journal — with no knowledge whatsoever of MetaTrader. Around that core sit interchangeable adapters. Nothing in <code>core/</code> imports a broker, touches the network, or reads the clock; time arrives as a parameter.</p>
+
+  <p>That's not architectural tidiness for its own sake. It buys two specific things: the whole test suite runs on your Mac with no MT5 installed, and the code that places real orders is the same code the backtest exercised.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 740 300" role="img" aria-label="Both strategy signals and future manual signals converge on one Signal object, which passes through the risk engine before reaching the broker; vetoes and fills both go to the journal.">
+        <!-- row 1: strategy path -->
+        <rect class="f-surface d-rule" x="8" y="36" width="104" height="44" stroke-width="1.2"/>
+        <text class="hd" x="24" y="56">1H candle</text>
+        <text class="lbl" x="24" y="70">closed bar</text>
+
+        <path class="d-ink" d="M116 58 L148 58" stroke-width="1.2" marker-end="url(#a2)"/>
+
+        <rect class="f-surface d-rule" x="152" y="30" width="124" height="56" stroke-width="1.2"/>
+        <text class="hd" x="166" y="50">range_1h</text>
+        <text class="lbl" x="166" y="64">marks range,</text>
+        <text class="lbl" x="166" y="77">reads the break</text>
+
+        <path class="d-ink" d="M280 58 L316 58" stroke-width="1.2" marker-end="url(#a2)"/>
+
+        <!-- signal node -->
+        <rect class="f-accent" x="320" y="38" width="84" height="40" rx="2"/>
+        <text class="hd" x="340" y="63" fill="var(--surface)">Signal</text>
+
+        <!-- row 2: manual path -->
+        <rect class="f-surface d-rule" x="152" y="150" width="124" height="56" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text class="hd" x="166" y="170">Telegram /</text>
+        <text class="hd" x="166" y="185">channel signal</text>
+        <text class="lbl" x="166" y="199">Phase 4</text>
+        <path class="d-ink" d="M280 178 L340 178 L340 84" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+        <text class="lbl" x="350" y="150">same door</text>
+
+        <!-- risk -->
+        <path class="d-ink" d="M408 58 L444 58" stroke-width="1.2" marker-end="url(#a2)"/>
+        <rect class="f-surface d-accent" x="448" y="26" width="116" height="64" stroke-width="1.8"/>
+        <text class="hd" x="462" y="46">RiskEngine</text>
+        <text class="lbl" x="462" y="60">sizes the lot</text>
+        <text class="lbl" x="462" y="73">or vetoes it</text>
+
+        <path class="d-ink" d="M568 58 L604 58" stroke-width="1.2" marker-end="url(#a2)"/>
+        <rect class="f-surface d-rule" x="608" y="30" width="112" height="56" stroke-width="1.2"/>
+        <text class="hd" x="622" y="50">BrokerPort</text>
+        <text class="lbl" x="622" y="64">places the</text>
+        <text class="lbl" x="622" y="77">order</text>
+
+        <!-- journal -->
+        <rect class="f-sunk d-rule" x="448" y="232" width="272" height="46" stroke-width="1.2"/>
+        <text class="hd" x="464" y="252">Journal · SQLite</text>
+        <text class="lbl" x="464" y="267">every signal, decision, veto and fill</text>
+
+        <path class="d-bad" d="M506 94 L506 228" stroke-width="1.2" marker-end="url(#a3)"/>
+        <text class="lbl bad" x="396" y="150">veto + reason</text>
+        <path class="d-good" d="M664 90 L664 228" stroke-width="1.2" marker-end="url(#a4)"/>
+        <text class="lbl good" x="674" y="150">fills</text>
+
+        <defs>
+          <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker>
+          <marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--bad)"/></marker>
+          <marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--good)"/></marker>
+        </defs>
+      </svg>
+    </div>
+    <figcaption><b>There is exactly one door to the broker.</b> The dashed inlet is the signal intake planned for Phase 4. It joins the path <em>before</em> the risk engine, not after — which is the whole point. A signal from a Telegram channel gets sized by the same 1% rule and blocked by the same daily loss cap as one the strategy found itself. No origin gets a bypass.</figcaption>
+  </figure>
+
+  <h3>One interface, three venues</h3>
+  <p>Backtesting, paper trading and live trading differ only in which adapter is loaded. That is one line in <code>config/settings.yaml</code>.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 740 280" role="img" aria-label="The same core stack sits above three interchangeable broker adapters: sim with historical candles and simulated fills, paper with live prices and simulated fills, and MT5 with live prices and real orders.">
+        <rect class="f-surface d-accent" x="8" y="14" width="724" height="68" stroke-width="1.8"/>
+        <text class="hd" x="26" y="38">Unchanged core</text>
+        <text class="lbl" x="26" y="56">models · ladder · risk · engine · journal · range_1h</text>
+        <text class="lbl" x="26" y="71">2,778 lines of Python · zero broker imports · 84 tests</text>
+
+        <text class="lbl" x="328" y="106">one line of config picks the row below</text>
+        <path class="d-rule" d="M160 86 L160 128" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <path class="d-rule" d="M370 86 L370 128" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <path class="d-rule" d="M580 86 L580 128" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+        <!-- sim -->
+        <rect class="f-surface d-good" x="30" y="132" width="260" height="98" stroke-width="1.5"/>
+        <text class="hd" x="48" y="156">sim_broker</text>
+        <text class="lbl" x="48" y="174">prices   historical CSV</text>
+        <text class="lbl" x="48" y="190">orders   simulated</text>
+        <text class="lbl" x="48" y="206">runs on  your Mac</text>
+        <text class="lbl good" x="48" y="222">BUILT — this is what you ran</text>
+
+        <!-- paper -->
+        <rect class="f-surface d-rule" x="306" y="132" width="178" height="98" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="hd" x="324" y="156">paper_broker</text>
+        <text class="lbl" x="324" y="174">prices   live</text>
+        <text class="lbl" x="324" y="190">orders   simulated</text>
+        <text class="lbl" x="324" y="206">runs on  Windows VPS</text>
+        <text class="lbl" x="324" y="222">PHASE 3</text>
+
+        <!-- mt5 -->
+        <rect class="f-surface d-warn" x="500" y="132" width="210" height="98" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="hd" x="518" y="156">mt5_broker</text>
+        <text class="lbl" x="518" y="174">prices   live</text>
+        <text class="lbl" x="518" y="190">orders   REAL</text>
+        <text class="lbl" x="518" y="206">runs on  Windows VPS</text>
+        <text class="lbl warn" x="518" y="222">PHASE 3 — demo first</text>
+
+        <text class="lbl" x="30" y="258">Only the bottom row knows what a broker is. The box above it never changes.</text>
+      </svg>
+    </div>
+    <figcaption><b>What changes between a backtest and a live trade.</b> Not the strategy, not the sizing, not the journal — only the adapter underneath. This is why paper mode will be a faithful preview of live behaviour rather than a separate program that happens to resemble it, and why a backtest exercises the code that actually trades.</figcaption>
+  </figure>
+
+  <h3>What exists today</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Module</th><th>Job</th><th class="num">Lines</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">core/models.py</td><td>Candles, signals, positions, fills, and all pip↔price arithmetic in one place</td><td class="num">160</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">core/risk.py</td><td>Percent-risk sizing and the four hard caps</td><td class="num">123</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">core/ladder.py</td><td>Shortens the TP ladder to what the lot size can execute</td><td class="num">36</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">core/engine.py</td><td>Ordering: collect fills → manage open trades → look for entries</td><td class="num">193</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">core/journal.py</td><td>SQLite audit trail and restart reconciliation source</td><td class="num">195</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">core/metrics.py</td><td>Win rate, profit factor, max drawdown, expectancy</td><td class="num">79</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">brokers/base.py</td><td>The one interface every venue implements</td><td class="num">57</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">brokers/sim_broker.py</td><td>Historical replay with pessimistic fill assumptions</td><td class="num">201</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">strategies/range_1h.py</td><td>The opening-range strategy and its guards</td><td class="num">174</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">strategies/base.py</td><td>Strategy contract and auto-discovering plugin registry</td><td class="num">70</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">scripts/backtest.py</td><td>End-to-end runner over a CSV</td><td class="num">98</td><td><span class="chip built">built</span></td></tr>
+        <tr><td class="mono">optimize/</td><td>Parameter sweep, walk-forward, overfitting report</td><td class="num">—</td><td><span class="chip later">phase 2</span></td></tr>
+        <tr><td class="mono">brokers/mt5_broker.py</td><td>Real orders — the only file that will import MetaTrader5</td><td class="num">—</td><td><span class="chip later">phase 3</span></td></tr>
+        <tr><td class="mono">brokers/paper_broker.py</td><td>Live prices, simulated fills</td><td class="num">—</td><td><span class="chip later">phase 3</span></td></tr>
+        <tr><td class="mono">signals/</td><td>Telegram and channel signal intake with confidence scoring</td><td class="num">—</td><td><span class="chip later">phase 4</span></td></tr>
+        <tr><td class="mono">notify/</td><td>Entry, TP, SL and daily-summary alerts</td><td class="num">—</td><td><span class="chip later">phase 5</span></td></tr>
+      </tbody>
+      <caption>Adding a strategy means dropping one file into <code>strategies/</code> and naming it in the config — the registry imports the package's modules on load, so nothing else in the codebase changes. That claim was tested, not asserted: a second strategy was written in a scratch file, run through the full engine, and <code>git status</code> showed zero modified files.</caption>
+    </table>
+  </div>
+</section>
+
+<section id="journal">
+  <h2><span class="n">04</span> The journal</h2>
+  <p class="kicker">Your audit trail, and the reason a restart isn't a disaster</p>
+
+  <p>Every signal, every sizing decision, every veto and every fill lands in a SQLite file with four tables: <code>signals</code>, <code>decisions</code>, <code>positions</code>, <code>fills</code>. It's a plain file you can open with any SQLite browser.</p>
+
+  <p>It does two jobs. First, it answers "why" — including for trades that never happened, which is the harder and more useful question. Second, it's what the bot reads on startup to rebuild its own state.</p>
+
+  <div class="note flat">
+    <span class="label">Restarting mid-trade</span>
+    <p>The broker is the source of truth; the bot's memory is only a cache. On startup the engine asks the broker what's open, matches each position against the journal by its <strong>magic number</strong> (<code>770001</code>), and rebuilds from there. A restart with TP1 and TP2 filled and half the position still running resumes with the correct remaining volume and stop placement.</p>
+    <p>Positions it finds with a different magic number — your own manual trades in the same account — are logged and left strictly alone. Positions with no journal record are also left alone. The bot never manages an order it can't account for.</p>
+  </div>
+
+  <p>One thing worth understanding about the engine loop: when a stop or a target fills, that happens <em>inside</em> the broker, not through a call the bot makes. So on every candle the engine first drains the fills that occurred since last time, journals them, and adds them to the running daily total. Without that step the daily loss cap would never see a loss and your headline safety control would do nothing at all. That was a real bug found and fixed during Phase 1.</p>
+</section>
+
+<section id="train">
+  <h2><span class="n">05</span> "Training" the bot</h2>
+  <p class="kicker">There is no model — and that's the honest answer</p>
+
+  <div class="note">
+    <span class="label">Set expectations here</span>
+    <p>This bot does not learn, and there is no neural network inside it to train. It is a <strong>rule-based</strong> system: nine or ten numbers in a config file drive a fixed set of if-statements. Machine-learning trade filtering was considered during design and deliberately deferred.</p>
+    <p>What "training" means here is <strong>parameter optimization</strong> — searching for the numbers that held up on history — followed by validation designed to catch you fooling yourself. That's Phase 2, and it runs entirely on your Mac with no broker account.</p>
+  </div>
+
+  <h3>Step one: the sweep</h3>
+  <p>Take the parameters that are genuinely uncertain and try combinations of them over real history, using the same <code>sim_broker</code> the backtest already uses:</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Today</th><th>Worth sweeping because</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">tp_pips</td><td class="mono">100/200/300/400</td><td>The prime suspect. These are 5–20× the range that generated the signal</td></tr>
+        <tr><td class="mono">session_hour</td><td class="mono">08 London</td><td>Frankfurt, London and New York opens behave differently</td></tr>
+        <tr><td class="mono">confirmation_window</td><td class="mono">3 candles</td><td>Trades off missed breakouts against late, exhausted entries</td></tr>
+        <tr><td class="mono">min_range_pips</td><td class="mono">5</td><td>Already the second most common veto on test data</td></tr>
+        <tr><td class="mono">max_range_pips</td><td class="mono">60</td><td>Never triggered once in testing — may be set too loose to matter</td></tr>
+        <tr><td class="mono">sl_buffer_pips</td><td class="mono">2</td><td>Too tight and spread stops you out; too wide and it costs size</td></tr>
+        <tr><td class="mono">max_concurrent_positions</td><td class="mono">3</td><td>The dominant constraint right now — see section 06</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Step two: walk-forward, or the sweep means nothing</h3>
+  <p>A grid search over a few years of data will always find a combination that looks brilliant. It found the noise. The only question that matters is whether parameters chosen on one slice of history survive on a slice they never saw.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 740 250" role="img" aria-label="Four rolling windows: each optimizes parameters on twelve months of history then scores them on the following unseen three months, and only those four out-of-sample scores are reported.">
+        <text class="lbl" x="8" y="18">2021</text>
+        <text class="lbl" x="188" y="18">2022</text>
+        <text class="lbl" x="368" y="18">2023</text>
+        <text class="lbl" x="548" y="18">2024</text>
+        <line class="d-rule" x1="8" y1="26" x2="716" y2="26"/>
+
+        <rect class="f-sunk d-rule" x="8" y="40" width="180" height="30" stroke-width="1.1"/>
+        <text class="lbl" x="20" y="60">fit 12 months</text>
+        <rect class="f-surface d-good" x="188" y="40" width="48" height="30" stroke-width="1.6"/>
+        <text class="lbl good" x="244" y="60">score on the next 3 — unseen</text>
+
+        <rect class="f-sunk d-rule" x="53" y="86" width="180" height="30" stroke-width="1.1"/>
+        <text class="lbl" x="65" y="106">fit 12 months</text>
+        <rect class="f-surface d-good" x="233" y="86" width="48" height="30" stroke-width="1.6"/>
+        <text class="lbl good" x="289" y="106">score</text>
+
+        <rect class="f-sunk d-rule" x="98" y="132" width="180" height="30" stroke-width="1.1"/>
+        <text class="lbl" x="110" y="152">fit 12 months</text>
+        <rect class="f-surface d-good" x="278" y="132" width="48" height="30" stroke-width="1.6"/>
+        <text class="lbl good" x="334" y="152">score</text>
+
+        <rect class="f-sunk d-rule" x="143" y="178" width="180" height="30" stroke-width="1.1"/>
+        <text class="lbl" x="155" y="198">fit 12 months</text>
+        <rect class="f-surface d-good" x="323" y="178" width="48" height="30" stroke-width="1.6"/>
+        <text class="lbl good" x="379" y="198">score</text>
+
+        <path class="d-accent" d="M470 120 L470 70" stroke-width="1.3" marker-end="url(#a5)"/>
+        <text class="lbl acc" x="484" y="112">the only numbers you are allowed</text>
+        <text class="lbl acc" x="484" y="126">to believe are the green ones</text>
+
+        <text class="lbl" x="8" y="236">If the green scores are far worse than the grey ones, the parameters are fitted to noise. Widen the windows or simplify the rules.</text>
+
+        <defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs>
+      </svg>
+    </div>
+    <figcaption><b>Rolling in-sample fit, out-of-sample score.</b> Parameters are chosen on the grey window and judged only on the green one that follows it, then the whole frame slides forward. The report flags the gap between in-sample and out-of-sample performance explicitly, because that gap <em>is</em> the overfitting measurement.</figcaption>
+  </figure>
+
+  <h3>What you need before any of this is worth running</h3>
+  <p>Real EURUSD H1 history — several years of it, exported from MT5 or any data vendor, as <code>time,open,high,low,close,volume</code>. The current <code>data/EURUSD_H1_synthetic.csv</code> is a generated random walk. It proves the plumbing works. It tells you nothing about the strategy.</p>
+</section>
+
+<section id="test">
+  <h2><span class="n">06</span> Testing it today</h2>
+  <p class="kicker">Two commands, no broker account, no MT5</p>
+
+  <pre class="term"><span class="cmt"># 84 unit and integration tests — runs in well under a second</span>
+.venv/bin/python -m pytest
+
+<span class="cmt"># full end-to-end run over candles; --rejections lists every skipped setup</span>
+.venv/bin/python scripts/backtest.py \
+    --csv data/EURUSD_H1_synthetic.csv --symbol EURUSD --rejections</pre>
+
+  <p>The <code>--rejections</code> output is usually more informative than the win rate, because it tells you what the bot <em>wanted</em> to do and couldn't.</p>
+
+  <h3>What the synthetic run returns</h3>
+  <p>These are the real numbers from that command, on 2,256 candles of generated data, $10,000 starting equity, 1-pip spread:</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Metric</th><th class="num">Value</th><th>Read it as</th></tr></thead>
+      <tbody>
+        <tr><td>Positions opened</td><td class="num">68</td><td>Distinct trades over ~4.5 months</td></tr>
+        <tr><td>Exit fills</td><td class="num">97</td><td>Ladder rungs and stops, <em>not</em> trades — see the caveat below</td></tr>
+        <tr><td>Reached TP1</td><td class="num">15</td><td>22% of positions ever got to the first target</td></tr>
+        <tr><td>Stop-loss fills</td><td class="num">64</td><td>12 of them at exactly breakeven — the TP1 stop-move working</td></tr>
+        <tr><td>Win rate (per fill)</td><td class="num">34.0%</td><td>Not per trade. The metric counts exits</td></tr>
+        <tr><td>Profit factor</td><td class="num">1.25</td><td>Noise on a random walk. Not evidence</td></tr>
+        <tr><td>Net profit</td><td class="num pos">+1,229.64</td><td>Meaningless on synthetic data</td></tr>
+        <tr><td>Max drawdown</td><td class="num neg">2,051.70</td><td><strong>20.5% of the account.</strong> The number that would have actually hurt</td></tr>
+        <tr><td>Setups skipped</td><td class="num">22</td><td>15 × MAX_POSITIONS, 7 × RANGE_TOO_SMALL</td></tr>
+      </tbody>
+      <caption>Reproduce with the second command above. Figures will differ if you change <code>--equity</code> or <code>--spread</code>.</caption>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="label">Three things in that table you should not skim past</span>
+    <p><strong>A profit factor of 1.25 on a random walk is noise.</strong> It demonstrates that candles flow through the strategy, the risk engine, the broker and the metrics without crashing. It is not a result. Don't let it become one in your memory.</p>
+    <p><strong>"Win rate" counts exit fills, not positions.</strong> A trade that hits TP1 and TP2 then stops out at breakeven contributes two wins and one neutral exit — from one position. Per <em>position</em>, only 15 of 68 reached any target at all. That is the honest figure, and the metrics module should be reporting it.</p>
+    <p><strong>MAX_POSITIONS caused 15 of the 22 skips.</strong> This is a genuine design collision, not a tuning detail: targets 100–400 pips away mean positions are held for days, positions held for days accumulate, and three is the ceiling. The bot spent much of the run full and refusing new setups. Either the targets shrink or the position limit rises — the Phase 2 sweep should decide which, and it is the first thing the optimizer will argue with.</p>
+  </div>
+
+  <h3>Where the simulator is deliberately unkind to itself</h3>
+  <ul class="plain">
+    <li>If a candle touches both the stop and a target, <strong>the stop wins</strong>. Tick order inside a candle is unknowable, and flattering a backtest is how strategies look profitable right up until they trade real money.</li>
+    <li>Entries fill at the <em>next</em> candle's open, never inside the signal candle.</li>
+    <li>Spread is charged as a half-spread on both entry and exit.</li>
+  </ul>
+
+  <div class="note">
+    <span class="label">A gap that is real but not a bug</span>
+    <p>Position size is calculated from the signal candle's close, but the fill happens at the next candle's open. When the market gaps, your realised risk differs from your intended 1%. This is inherent to market entries rather than a defect — but it's real, and on a gappy open a "1% trade" can be a 1.4% trade. Worth knowing before you size up.</p>
+  </div>
+</section>
+
+<section id="live">
+  <h2><span class="n">07</span> Getting to a live order</h2>
+  <p class="kicker">Five gates, in order, none skippable</p>
+
+  <p>Two infrastructure facts shape all of this. The <code>MetaTrader5</code> Python package is <strong>Windows-only</strong>, so live and paper trading need a Windows VPS — your Mac can do everything up to that point but cannot place an order. And MT5 keeps its own server time, which is usually not London time; the session hour gets translated at runtime, and getting that translation wrong means marking the wrong candle as the opening range.</p>
+
+  <div class="gates">
+    <div class="gate">
+      <div class="no">1</div>
+      <div>
+        <h4>Backtest on real history</h4>
+        <p>Replace the synthetic CSV with several years of actual EURUSD H1 candles and run it. Read the rejection list before the metrics.</p>
+        <span class="pass">it trades at a plausible frequency and the drawdown is survivable on your account size</span>
+      </div>
+    </div>
+    <div class="gate">
+      <div class="no">2</div>
+      <div>
+        <h4>Optimize, then validate out-of-sample</h4>
+        <p>Phase 2: the sweep plus walk-forward from section 05. Expect the 100/200/300/400 targets to change.</p>
+        <span class="pass">out-of-sample results are in the same league as in-sample — not merely positive</span>
+      </div>
+    </div>
+    <div class="gate">
+      <div class="no">3</div>
+      <div>
+        <h4>Paper trade on live prices</h4>
+        <p>Phase 3: <code>paper_broker</code> on the VPS. Real quotes, real spread, real session times, no orders. This is where timezone and spread assumptions get found out.</p>
+        <span class="pass">paper entries land where the backtest said they would, on the candles it said they would</span>
+      </div>
+    </div>
+    <div class="gate">
+      <div class="no">4</div>
+      <div>
+        <h4>Demo account</h4>
+        <p>Real MT5 order flow against a demo balance. Now you're testing execution: slippage, rejected partial closes, stop modifications, weekend gaps, and a deliberate mid-trade restart to prove reconciliation works.</p>
+        <span class="pass">the journal matches the MT5 history, trade for trade, including a restart</span>
+      </div>
+    </div>
+    <div class="gate">
+      <div class="no">5</div>
+      <div>
+        <h4>Live, at a fraction of the size</h4>
+        <p>Drop <code>risk_per_trade_pct</code> to something that cannot hurt — 0.1 or 0.25 — and leave it there for a meaningful number of trades. Your real enemies here are not strategy quality but a VPS reboot, a dropped MT5 connection, and a broker whose contract specs differ from <code>symbols.yaml</code>.</p>
+        <span class="pass">live fills track demo fills, and nothing operational has surprised you</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="label">Check this against your broker before gate 4</span>
+    <p><code>config/symbols.yaml</code> currently assumes <code>pip_value_per_lot: 10.00</code> for USD-quoted pairs and <code>6.70</code> for USDJPY. The USD-quoted figure is reliable on a USD account; the USDJPY one varies with price and is an approximation. Every lot size the bot calculates depends on these numbers, so confirm them against your broker's contract specification. A wrong pip value means every position is the wrong size, silently, in a way no test can catch.</p>
+  </div>
+</section>
+
+<section id="day">
+  <h2><span class="n">08</span> What a trading day looks like</h2>
+  <p class="kicker">Once it's running on the VPS</p>
+
+  <p>The bot wakes on each closed 1H candle and does three things in a fixed order: collect any fills the broker produced on its own, manage what's already open, then look for a new entry. That order matters — a stop that filled overnight has to be counted against the daily loss cap <em>before</em> the cap is consulted on a new trade.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Time</th><th>What the bot does</th><th>What you see</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">08:00</td><td>Marks the high and low of the opening hour</td><td>Nothing — no order, no alert</td></tr>
+        <tr><td class="mono">09:00</td><td>First check for a close outside the range</td><td>A journal row either way</td></tr>
+        <tr><td class="mono">09:00–11:00</td><td>Up to three candles to break out, then the setup is abandoned for the day</td><td>A veto with its reason, if it's abandoned</td></tr>
+        <tr><td class="mono">on breakout</td><td>Sizes to 1%, checks four caps, builds the ladder, enters at the next open</td><td>Position opens; Phase 5 adds a Telegram alert</td></tr>
+        <tr><td class="mono">hourly after</td><td>Drains fills, rolls the daily tally, moves the stop to breakeven once TP1 fills</td><td>Partial closes appear in MT5</td></tr>
+        <tr><td class="mono">next day</td><td>Daily loss tally resets; a new range is marked</td><td>Yesterday's trade, if still open, keeps being managed</td></tr>
+      </tbody>
+      <caption>Trades routinely survive past the day they opened — that's a consequence of 100–400 pip targets on a 1H signal, not a malfunction.</caption>
+    </table>
+  </div>
+
+  <h3>Three things to watch, in order of how much they'd cost you</h3>
+  <ol class="steps">
+    <li><strong>MAX_POSITIONS in the rejection log.</strong> If the bot is constantly full, you're not trading the strategy you think you are — you're trading whichever setups happened to arrive when a slot was free.</li>
+    <li><strong>The journal versus MT5 history.</strong> They should agree trade for trade. If they drift, stop and find out why before adding size.</li>
+    <li><strong>Drawdown, not profit.</strong> A profit factor above 1 is worth nothing if the path there is deeper than your account — or your nerve — can survive. On the test run that path was 20.5% deep.</li>
+  </ol>
+</section>
+
+<section id="gaps">
+  <h2><span class="n">09</span> What isn't built, and what I'd fix first</h2>
+  <p class="kicker">So nothing here is a surprise later</p>
+
+  <h3>Not built yet, by design</h3>
+  <p>Phase 2 (sweep, walk-forward, overfitting report), Phase 3 (<code>mt5_broker</code>, <code>paper_broker</code>), Phase 4 (Telegram and channel signal intake with confidence scoring), Phase 5 (notifications, process supervision, a deployment runbook). The directories for signals and optimization exist and are empty. Out of scope entirely: MT4, news filtering, ML trade filtering, a web dashboard.</p>
+
+  <h3>Loose ends in what <em>is</em> built</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Issue</th><th>Effect</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>The repository has no README. The last commit says "rewrite README for Phase 1" but in fact deleted <code>readme.md</code> and never added a replacement.</td><td>Nothing explains the project at its front door. This document is the stand-in; the repo still wants a short one.</td><td><span class="chip gap">fix</span></td></tr>
+        <tr><td><code>max_concurrent_positions: 3</code> collides with 100–400 pip targets</td><td>Caused 15 of 22 skipped setups on test data. Not a bug — a parameter conflict Phase 2 must resolve</td><td><span class="chip gap">decide</span></td></tr>
+        <tr><td>Win rate counts exit fills, not positions</td><td>Headline figure reads worse and less meaningfully than it should. Per-position stats are the ones to report</td><td><span class="chip gap">fix</span></td></tr>
+        <tr><td><code>ALREADY_TRADED_TODAY</code> and <code>SETUP_EXPIRED</code> are defined but never emitted</td><td>Both conditions are enforced by the strategy's state machine, so behaviour is correct — but an abandoned setup is logged under a less specific reason than it deserves</td><td><span class="chip gap">tidy</span></td></tr>
+        <tr><td><code>required_timeframes()</code> is part of the strategy contract but the engine ignores it</td><td>Harmless while every strategy is H1-only. A multi-timeframe strategy would need the engine to honour it</td><td><span class="chip later">later</span></td></tr>
+        <tr><td>The backtest runner takes one symbol and one CSV, while the config lists two symbols</td><td>You test EURUSD and GBPUSD in separate runs. Portfolio-level interaction between them is untested, including how they compete for those three position slots</td><td><span class="chip later">phase 2</span></td></tr>
+        <tr><td>USDJPY <code>pip_value_per_lot</code> is an approximation</td><td>Sizing error on JPY pairs until confirmed against your broker</td><td><span class="chip gap">verify</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note flat">
+    <span class="label">The one-sentence summary</span>
+    <p>The machinery is built, tested and honest about itself — and it has never seen a real price. Everything in sections 05 through 07 exists to stop you from mistaking working software for a profitable strategy.</p>
+  </div>
+</section>
+
+<footer>
+  TradingWavesBot · Phase 1 · documentation generated 2026-10-07<br>
+  Source of record: <code>docs/superpowers/specs/2026-09-20-tradingwavesbot-design.md</code> · 2,778 lines of Python · 84 tests passing<br>
+  Figures in sections 06 and 09 come from the synthetic dataset and are plumbing evidence, not strategy evidence.
+</footer>
+
+</main>
+</div>
